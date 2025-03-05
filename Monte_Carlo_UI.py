@@ -92,38 +92,24 @@ ticker = st.selectbox("Select Crude Oil Stock:", crude_oil_stocks)
 num_simulations = st.slider("Number of Simulations:", min_value=1000, max_value=10000, step=1000, value=5000)
 num_days = st.slider("Time Horizon (Days):", min_value=10, max_value=180, step=10, value=30)
 
-# Function to fetch data if missing
-def fetch_data_if_missing(ticker):
-    """Checks if stock data exists, and if not, runs Fetch_Data.py to download it."""
-    conn = sqlite3.connect("stock_data.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (ticker,))
-    table_exists = cursor.fetchone() is not None
-    conn.close()
-
-    if not table_exists:
-        st.warning(f"⚠️ No data found for {ticker}. Fetching data automatically...")
-        try:
-            subprocess.run(["python", "Fetch_Data.py"], check=True)
-            conn = sqlite3.connect("stock_data.db")
-            historical_data = pd.read_sql(f'SELECT * FROM "{ticker}"', conn)
-            conn.close()
-            return historical_data
-        except Exception as e:
-            st.error(f"❌ Failed to fetch data automatically. Error: {e}")
-            return None
-    
-    conn = sqlite3.connect("stock_data.db")
+# Fetch the latest stock data before simulation
+def fetch_latest_stock_data(ticker):
+    """Fetches the latest stock data from Yahoo Finance and updates SQLite before use."""
     try:
+        # ✅ Run Fetch_Data.py to update the SQLite database
+        subprocess.run(["python", "Fetch_Data.py"], check=True)
+
+        # ✅ Retrieve the latest data from SQLite
+        conn = sqlite3.connect("stock_data.db")
         historical_data = pd.read_sql(f'SELECT * FROM "{ticker}"', conn)
-    except Exception:
-        st.error(f"⚠️ Error retrieving data for {ticker}.")
-        historical_data = None
-    conn.close()
-    return historical_data
+        conn.close()
+        return historical_data
+    except Exception as e:
+        st.error(f"❌ Error fetching the latest stock data: {e}")
+        return None
 
 # Fetch data
-historical_data = fetch_data_if_missing(ticker)
+historical_data = fetch_latest_stock_data(ticker)
 
 if historical_data is None or historical_data.empty:
     st.error(f"⚠️ Data for {ticker} is unavailable.")
