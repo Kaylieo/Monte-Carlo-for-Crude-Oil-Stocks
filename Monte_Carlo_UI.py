@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 # Run the Streamlit App -> streamlit run Monte_Carlo_UI.py
 # Locate MonteCarlo folder -> cd MonteCarlo
 
-# 🔥 Custom Streamlit Theme (Black, White, Red)
+# Custom Streamlit Theme (Black, White, Red)
 st.markdown(
     """
     <style>
@@ -26,7 +26,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 🎯 Streamlit UI for User Input
+# Streamlit UI for User Input
 st.title("Monte Carlo Simulation for Crude Oil Stocks")
 
 # Dropdown for stock selection
@@ -38,7 +38,7 @@ num_simulations = st.slider("Number of Simulations:", min_value=1000, max_value=
 num_days = st.slider("Time Horizon (Days):", min_value=10, max_value=180, step=10, value=30)
 
 if st.button("Run Simulation"):
-    # ✅ Connect to SQLite Database
+    # Connect to SQLite Database
     conn = sqlite3.connect("stock_data.db")
     
     try:
@@ -74,7 +74,7 @@ if st.button("Run Simulation"):
     sigma = returns.std() * np.sqrt(252)  # Annualized volatility
     initial_price = historical_prices.iloc[-1]
     
-    # 📈 Generate Monte Carlo Simulated Stock Prices
+    # Generate Monte Carlo Simulated Stock Prices
     np.random.seed(42)
     simulated_prices = np.zeros((num_days, num_simulations))
     simulated_prices[0] = initial_price
@@ -86,7 +86,7 @@ if st.button("Run Simulation"):
             (mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * random_shocks
         )
 
-    # 📊 Create Multi-Colored Line Graph (Non-Animated)
+    # Create Multi-Colored Line Graph (Non-Animated)
     fig = go.Figure()
     
     for i in range(num_simulations):
