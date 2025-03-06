@@ -82,6 +82,37 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Apply Background Overlay Based on Theme
+light_mode_image = "https://i.imgur.com/fwgvLyX.jpeg"  # White background, black lines
+dark_mode_image = "https://i.imgur.com/WvFsAcX.jpeg"  # Black background, white lines
+
+if st.session_state["dark_mode"]:
+    background_image = dark_mode_image
+else:
+    background_image = light_mode_image
+
+st.markdown(
+    f"""
+    <style>
+        .stApp::before {{
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('{background_image}');
+            background-size: cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            opacity: 0.2;  /* Adjust transparency */
+            z-index: -1;
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("Monte Carlo Simulation for Crude Oil Stocks")  # UI title centered
 
 # Dropdown for stock selection
@@ -180,6 +211,26 @@ if st.button("Run Simulation"):
 
     st.plotly_chart(fig)
 
+    # Move the Download Button HERE, directly below the graph
+    csv_filename = f"MonteCarlo_{ticker}.csv"
+    csv_data = pd.DataFrame(simulated_prices)
+    csv_data.index = range(1, num_days + 1)  # Number rows as days
+    csv_data.index.name = "Day"
+    csv_data.columns = [f"Simulation {i+1}" for i in range(num_simulations)]
+    csv_data = csv_data.round(2)  # Reduce decimal places
+
+    csv_data = csv_data.reset_index()
+
+    # Center the Download Button
+    col1, col2, col3 = st.columns([3, 1, 3])
+    with col2:
+        st.download_button(
+            label="Download Simulated Data",
+            data=csv_data.to_csv(index=False).encode("utf-8"),
+            file_name=csv_filename,
+            mime="text/csv"
+        )
+
     st.markdown("<hr style='border: 1px solid #ff0000;'>", unsafe_allow_html=True)
 
     # Display Key Stats
@@ -205,35 +256,27 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Apply Better Table Styling for Readability
-styled_df = historical_data[["date", "close"]].tail(10).style.set_table_styles(
-    [
-        {"selector": "thead th", "props": [("background-color", "#ff0000"), ("color", "white"), ("font-size", "16px"), ("text-align", "center")]},
-        {"selector": "tbody td", "props": [("background-color", "#f9f9f9"), ("text-align", "center"), ("font-size", "14px")]}
-    ]
+# Ensure only 'date' and 'close' columns are displayed
+styled_df = historical_data[["date", "close"]].tail(10)
+
+# Apply CSS to center the table and remove the left column (index)
+st.markdown(
+    """
+    <style>
+        /* Center the table */
+        .stDataFrame {
+            margin-left: auto;
+            margin-right: auto;
+            width: 60% !important;
+        }
+        /* Hide index column */
+        .dataframe tbody tr th {
+            display: none;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
-st.dataframe(styled_df)
-
-# Provide CSV Download Button (only if simulation was run)
-if simulated_prices is not None:
-    csv_filename = f"MonteCarlo_{ticker}.csv"
-    # Format DataFrame for Better Readability
-    csv_data = pd.DataFrame(simulated_prices)
-    csv_data.index = range(1, num_days + 1)  # Number rows as days
-    csv_data.index.name = "Day"
-    csv_data.columns = [f"Simulation {i+1}" for i in range(num_simulations)]  # Add column labels
-    csv_data = csv_data.round(2)  # Reduce decimal places for clarity
-
-    # Reset index so "Day" is a column in the CSV
-    csv_data = csv_data.reset_index()
-
-    # Better Centering for Download Button
-    col1, col2, col3 = st.columns([3, 1, 3])  # Equal side margins for perfect centering
-    with col2:
-        st.download_button(
-            label="Download Simulated Data",
-            data=csv_data.to_csv(index=False).encode("utf-8"),
-            file_name=csv_filename,
-            mime="text/csv"
-        )
+# Display table centered and without index
+st.dataframe(styled_df, use_container_width=True, hide_index=True)
