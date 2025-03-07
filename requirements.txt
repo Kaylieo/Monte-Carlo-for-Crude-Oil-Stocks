@@ -68,3 +68,5 @@ tzdata==2025.1
 urllib3==2.3.0
 yarl==1.18.3
 yfinance==0.2.54
+arch==7.2.0
+scipy==1.15.2
