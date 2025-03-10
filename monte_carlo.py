@@ -16,7 +16,7 @@ if "dark_mode" not in st.session_state:
     st.session_state["dark_mode"] = False
 st.session_state["dark_mode"] = st.toggle("Toggle Dark Mode", value=st.session_state["dark_mode"])
 
-# Colors
+# Colors (no background images)
 if st.session_state["dark_mode"]:
     background_color = "#000000"
     text_color = "white"
@@ -94,25 +94,20 @@ def fetch_latest_stock_data(ticker):
         st.error(f"❌ Error fetching the latest stock data: {e}")
         return None
 
-historical_data = fetch_latest_stock_data(ticker)
-
-if historical_data is None or historical_data.empty:
-    st.error(f"⚠️ Data for {ticker} is unavailable.")
-    st.stop()
-else:
-    st.success(f"✅ Data for {ticker} loaded successfully.")
-
-if st.button("Run Simulation"):
-    historical_data.columns = historical_data.columns.str.lower()
-
+def run_simulation_logic(historical_data, ticker, num_days, num_simulations):
+    """
+    Runs the Monte Carlo simulation and returns a dictionary with results.
+    If required columns or data are missing, it calls st.error() and stops the app.
+    """
+    # Validate required columns
     if "close" not in historical_data.columns:
         st.error(f"⚠️ The expected 'close' price column is missing for {ticker}.")
         st.stop()
-
     if "date" not in historical_data.columns:
         st.error(f"⚠️ The table for {ticker} does not contain a 'date' column.")
         st.stop()
-
+    
+    # Prepare historical data
     historical_data["date"] = pd.to_datetime(historical_data["date"])
     historical_prices = historical_data["close"].dropna()
 
@@ -124,8 +119,7 @@ if st.button("Run Simulation"):
     # Annualized mean return (simple estimate)
     mu = returns.mean() * 252
 
-    # Fit EGARCH(1,1) with AR(1) mean and skew-t distribution for heavier tails
-    print("Fitting EGARCH(1,1) with AR(1) mean and skew-t distribution for heavier tails...")
+    st.write("Fitting EGARCH(1,1) with AR(1) mean and skew-t distribution for heavier tails...")
     garch = arch_model(
         returns,
         mean='AR',
@@ -138,36 +132,31 @@ if st.button("Run Simulation"):
         rescale=True
     ).fit(disp="on")
 
-    # Print model summary in terminal
-    print("Model Summary:")
-    print(garch.summary())
+    st.write("Model Summary:")
+    try:
+        st.write(garch.summary())
+    except Exception as e:
+        st.warning("Warning: Could not compute full model summary due to: " + str(e))
 
     # -----------------------------
     # MANUALLY COMPUTE MULTI-STEP EGARCH VOLATILITY FORECAST
     # -----------------------------
-    # Get last estimated conditional variance from the fitted model
     last_variance = garch.conditional_volatility.iloc[-1] ** 2
     L = np.log(last_variance)
-    # Extract parameters (names as shown in the model summary)
     omega_param = garch.params['omega']
     beta_param = garch.params['beta[1]']
-    # The long-run log variance (if shocks are zero) is: omega/(1-beta)
     long_run_log_var = omega_param / (1 - beta_param)
-    # For h=1,...,num_days, forecast log variance:
     forecast_log_vars = np.array([
         long_run_log_var + (beta_param ** h) * (L - long_run_log_var)
         for h in range(1, num_days + 1)
     ])
-    # Convert forecasted log variances to volatilities:
     sigma_forecast = np.exp(0.5 * forecast_log_vars)
 
-    # Fallback if sigma_forecast is empty
     if sigma_forecast is None or len(sigma_forecast) == 0:
         st.warning("⚠️ Final fallback to historical volatility.")
         sigma_forecast = np.array([np.std(returns)] * num_days)
         sigma_forecast = np.nan_to_num(sigma_forecast, nan=np.std(returns))
 
-    # Now repeat the forecast volatility across simulations
     sigma = np.repeat(sigma_forecast[:, np.newaxis], num_simulations, axis=1)
     initial_price = historical_prices.iloc[-1]
 
@@ -178,12 +167,10 @@ if st.button("Run Simulation"):
     dt = 1 / 252  # daily fraction of a trading year
     dof = 5       # degrees of freedom for t-distribution
 
-    # Generate Sobol random draws
     sobol = Sobol(d=num_simulations, scramble=True)
     random_shocks = sobol.random(num_days)
-    random_shocks = t.ppf(random_shocks, dof)  # Convert to t-dist
+    random_shocks = t.ppf(random_shocks, dof)
 
-    # Use the constant annualized mean for drift, and incorporate forecast volatilities for each day
     drift = (mu - 0.5 * sigma_forecast**2)[:, np.newaxis] * dt
     diffusion = sigma * np.sqrt(dt) * random_shocks
 
@@ -195,6 +182,32 @@ if st.button("Run Simulation"):
 
     final_prices = simulated_prices[-1]
 
+    results = {
+        "final_prices": final_prices,
+        "initial_price": float(initial_price),
+        "expected_price": float(np.mean(final_prices)),
+        "std_dev": float(np.std(final_prices)),
+        "var_5pct": float(np.percentile(final_prices, 5)),
+        "cvar_5pct": float(np.mean(final_prices[final_prices <= np.percentile(final_prices, 5)])),
+        "simulated_prices": simulated_prices
+    }
+    return results
+
+# Get historical data from SQLite (via Fetch_Data.py)
+historical_data = fetch_latest_stock_data(ticker)
+if historical_data is None or historical_data.empty:
+    st.error(f"⚠️ Data for {ticker} is unavailable.")
+    st.stop()
+else:
+    st.success(f"✅ Data for {ticker} loaded successfully.")
+
+if st.button("Run Simulation"):
+    historical_data.columns = historical_data.columns.str.lower()
+    sim_results = run_simulation_logic(historical_data, ticker, num_days, num_simulations)
+    
+    final_prices = sim_results["final_prices"]
+    initial_price = sim_results["initial_price"]
+
     # Plot results
     x_values = list(range(num_days + 1))
     fig = go.Figure()
@@ -202,7 +215,7 @@ if st.button("Run Simulation"):
         fig.add_trace(
             go.Scatter(
                 x=x_values,
-                y=simulated_prices[:, i],
+                y=sim_results["simulated_prices"][:, i],
                 mode='lines',
                 line=dict(width=0.5),
                 opacity=0.5,
@@ -212,13 +225,12 @@ if st.button("Run Simulation"):
     fig.add_trace(
         go.Scatter(
             x=x_values,
-            y=simulated_prices.mean(axis=1),
+            y=sim_results["simulated_prices"].mean(axis=1),
             mode='lines',
             line=dict(color='red', width=2),
             name='Mean Path'
         )
     )
-
     fig.update_layout(
         title={
             'text': f"Monte Carlo Simulation of {ticker} ({num_simulations} Simulations)",
@@ -233,12 +245,11 @@ if st.button("Run Simulation"):
 
     # Prepare CSV for download
     csv_filename = f"MonteCarlo_{ticker}.csv"
-    csv_data = pd.DataFrame(simulated_prices)
+    csv_data = pd.DataFrame(sim_results["simulated_prices"])
     csv_data.index = range(1, num_days + 2)
     csv_data.index.name = "Day"
     csv_data.columns = [f"Simulation {i+1}" for i in range(num_simulations)]
     csv_data = csv_data.round(2).reset_index()
-
     col1, col2, col3 = st.columns([3, 1, 3])
     with col2:
         st.download_button(
@@ -247,17 +258,15 @@ if st.button("Run Simulation"):
             file_name=csv_filename,
             mime="text/csv"
         )
-
     st.markdown("<hr style='border: 1px solid #ff0000;'>", unsafe_allow_html=True)
-
     st.markdown(
         f"""
         <div style="text-align: center;">
             <h3>📉 <strong>Initial Price ({ticker}):</strong> ${initial_price:.2f}</h3>
-            <h3>📈 <strong>Expected Price After {num_days} Days:</strong> ${np.mean(final_prices):.2f}</h3>
-            <h3>📊 <strong>Std. Dev. of Final Prices:</strong> ${np.std(final_prices):.2f}</h3>
-            <h3>⚠️ <strong>5% VaR:</strong> ${np.percentile(final_prices, 5):.2f}</h3>
-            <h3>🔻 <strong>Conditional VaR (Expected Shortfall):</strong> ${np.mean(final_prices[final_prices <= np.percentile(final_prices, 5)]):.2f}</h3>
+            <h3>📈 <strong>Expected Price After {num_days} Days:</strong> ${sim_results["expected_price"]:.2f}</h3>
+            <h3>📊 <strong>Std. Dev. of Final Prices:</strong> ${sim_results["std_dev"]:.2f}</h3>
+            <h3>⚠️ <strong>5% VaR:</strong> ${sim_results["var_5pct"]:.2f}</h3>
+            <h3>🔻 <strong>Conditional VaR (Expected Shortfall):</strong> ${sim_results["cvar_5pct"]:.2f}</h3>
         </div>
         """,
         unsafe_allow_html=True
@@ -266,10 +275,9 @@ if st.button("Run Simulation"):
 st.markdown("<hr style='border: 1px solid #ff0000;'>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; color: {text_color};'>Historical Prices</h2>", unsafe_allow_html=True)
 
-# Force two decimals in the 'close' column
+# Format historical data table with two decimals for the 'close' column
 styled_df = historical_data[["date", "close"]].tail(10).copy()
 styled_df["close"] = styled_df["close"].apply(lambda x: f"{x:.2f}")
-
 st.markdown(
     """
     <style>
