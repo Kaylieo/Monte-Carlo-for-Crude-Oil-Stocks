@@ -9,9 +9,6 @@ from arch import arch_model
 from scipy.stats import t
 from scipy.stats.qmc import Sobol
 
-# Run the Streamlit App -> streamlit run Monte_Carlo_UI.py
-# Locate MonteCarlo folder -> cd MonteCarlo
-
 st.set_page_config(page_title="Monte Carlo Simulation", layout="wide")
 
 # Dark mode toggle
@@ -77,37 +74,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Background images
-light_mode_image = "https://i.imgur.com/fwgvLyX.jpeg"
-dark_mode_image = "https://i.imgur.com/WvFsAcX.jpeg"
-
-if st.session_state["dark_mode"]:
-    background_image = dark_mode_image
-else:
-    background_image = light_mode_image
-
-st.markdown(
-    f"""
-    <style>
-        .stApp::before {{
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('{background_image}');
-            background-size: cover;
-            background-attachment: fixed;
-            background-repeat: no-repeat;
-            opacity: 0.2;
-            z-index: -1;
-        }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 st.title("Monte Carlo Simulation for Crude Oil Stocks")
 
 crude_oil_stocks = ["XOM", "CVX", "OXY", "BP", "COP", "EOG", "MPC", "VLO", "PSX", "HES"]
@@ -155,9 +121,10 @@ if st.button("Run Simulation"):
         st.error("⚠️ Not enough historical data to run a meaningful simulation.")
         st.stop()
 
+    # Annualized mean return (simple estimate)
     mu = returns.mean() * 252
 
-    # Print in terminal, not UI
+    # Fit EGARCH(1,1) with AR(1) mean and skew-t distribution for heavier tails
     print("Fitting EGARCH(1,1) with AR(1) mean and skew-t distribution for heavier tails...")
     garch = arch_model(
         returns,
@@ -175,38 +142,32 @@ if st.button("Run Simulation"):
     print("Model Summary:")
     print(garch.summary())
 
-    # Single-step forecast approach if num_days > 1
-    if num_days > 1:
-        single_step_forecast = garch.forecast(horizon=1, reindex=False)
-        if not single_step_forecast.variance.empty and not single_step_forecast.variance.isnull().values.all():
-            try:
-                var_1step = single_step_forecast.variance.iloc[-1].values[0]
-                sigma_forecast = np.array([np.sqrt(var_1step)] * num_days)
-            except Exception as e:
-                st.warning(f"GARCH forecast extraction failed: {e}. Using fallback.")
-                sigma_forecast = np.array([np.std(returns)] * num_days)
-        else:
-            st.warning("Forecast was empty or NaN. Using fallback.")
-            sigma_forecast = np.array([np.std(returns)] * num_days)
-    else:
-        # horizon=1
-        single_step_forecast = garch.forecast(horizon=1, reindex=False)
-        if not single_step_forecast.variance.empty and not single_step_forecast.variance.isnull().values.all():
-            try:
-                var_1step = single_step_forecast.variance.iloc[-1].values[0]
-                sigma_forecast = np.array([np.sqrt(var_1step)])
-            except Exception as e:
-                st.warning(f"GARCH forecast extraction failed: {e}. Using fallback.")
-                sigma_forecast = np.array([np.std(returns)])
-        else:
-            st.warning("Forecast was empty or NaN. Using fallback.")
-            sigma_forecast = np.array([np.std(returns)])
+    # -----------------------------
+    # MANUALLY COMPUTE MULTI-STEP EGARCH VOLATILITY FORECAST
+    # -----------------------------
+    # Get last estimated conditional variance from the fitted model
+    last_variance = garch.conditional_volatility.iloc[-1] ** 2
+    L = np.log(last_variance)
+    # Extract parameters (names as shown in the model summary)
+    omega_param = garch.params['omega']
+    beta_param = garch.params['beta[1]']
+    # The long-run log variance (if shocks are zero) is: omega/(1-beta)
+    long_run_log_var = omega_param / (1 - beta_param)
+    # For h=1,...,num_days, forecast log variance:
+    forecast_log_vars = np.array([
+        long_run_log_var + (beta_param ** h) * (L - long_run_log_var)
+        for h in range(1, num_days + 1)
+    ])
+    # Convert forecasted log variances to volatilities:
+    sigma_forecast = np.exp(0.5 * forecast_log_vars)
 
+    # Fallback if sigma_forecast is empty
     if sigma_forecast is None or len(sigma_forecast) == 0:
         st.warning("⚠️ Final fallback to historical volatility.")
         sigma_forecast = np.array([np.std(returns)] * num_days)
         sigma_forecast = np.nan_to_num(sigma_forecast, nan=np.std(returns))
 
+    # Now repeat the forecast volatility across simulations
     sigma = np.repeat(sigma_forecast[:, np.newaxis], num_simulations, axis=1)
     initial_price = historical_prices.iloc[-1]
 
@@ -214,24 +175,27 @@ if st.button("Run Simulation"):
     simulated_prices = np.zeros((num_days + 1, num_simulations))
     simulated_prices[0] = initial_price
 
-    dt = 1 / 252
-    dof = 5
+    dt = 1 / 252  # daily fraction of a trading year
+    dof = 5       # degrees of freedom for t-distribution
 
+    # Generate Sobol random draws
     sobol = Sobol(d=num_simulations, scramble=True)
     random_shocks = sobol.random(num_days)
-    random_shocks = t.ppf(random_shocks, dof)
+    random_shocks = t.ppf(random_shocks, dof)  # Convert to t-dist
 
+    # Use the constant annualized mean for drift, and incorporate forecast volatilities for each day
     drift = (mu - 0.5 * sigma_forecast**2)[:, np.newaxis] * dt
     diffusion = sigma * np.sqrt(dt) * random_shocks
 
     for day in range(1, num_days + 1):
         simulated_prices[day] = (
-            simulated_prices[day - 1]
-            * np.exp(drift[day - 1, 0] + diffusion[day - 1, :])
+            simulated_prices[day - 1] *
+            np.exp(drift[day - 1, 0] + diffusion[day - 1, :])
         )
 
     final_prices = simulated_prices[-1]
 
+    # Plot results
     x_values = list(range(num_days + 1))
     fig = go.Figure()
     for i in range(num_simulations):
@@ -267,6 +231,7 @@ if st.button("Run Simulation"):
     )
     st.plotly_chart(fig)
 
+    # Prepare CSV for download
     csv_filename = f"MonteCarlo_{ticker}.csv"
     csv_data = pd.DataFrame(simulated_prices)
     csv_data.index = range(1, num_days + 2)
@@ -301,7 +266,10 @@ if st.button("Run Simulation"):
 st.markdown("<hr style='border: 1px solid #ff0000;'>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; color: {text_color};'>Historical Prices</h2>", unsafe_allow_html=True)
 
-styled_df = historical_data[["date", "close"]].tail(10)
+# Force two decimals in the 'close' column
+styled_df = historical_data[["date", "close"]].tail(10).copy()
+styled_df["close"] = styled_df["close"].apply(lambda x: f"{x:.2f}")
+
 st.markdown(
     """
     <style>
