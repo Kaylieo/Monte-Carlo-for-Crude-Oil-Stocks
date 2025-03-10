@@ -3,6 +3,7 @@ import pandas as pd
 import sqlite3
 import subprocess
 import plotly.graph_objects as go
+import numpy as np
 from monte_carlo import run_simulation_logic
 
 st.set_page_config(page_title="Monte Carlo Simulation", layout="wide")
@@ -110,34 +111,63 @@ if st.button("Run Simulation"):
         st.error(f"An unexpected error occurred: {e}")
         st.stop()
 
-    # Note: The EGARCH model summary is printed to the terminal.
-    # Optionally, you can indicate in the UI that the summary was printed.
+    # EGARCH model summary is printed to the terminal
     st.info("EGARCH model summary has been printed to the terminal.")
 
     final_prices = sim_results["final_prices"]
+    simulated_prices = sim_results["simulated_prices"]
     initial_price = sim_results["initial_price"]
 
-    # Plot results
+    # --------------------
+    # 1) Plot All Simulated Paths with Explicit Best, Worst, and Mean Paths
+    # --------------------
     x_values = list(range(num_days + 1))
     fig = go.Figure()
+    # Plot all simulated paths (spaghetti plot)
     for i in range(num_simulations):
         fig.add_trace(
             go.Scatter(
                 x=x_values,
-                y=sim_results["simulated_prices"][:, i],
+                y=simulated_prices[:, i],
                 mode='lines',
                 line=dict(width=0.5),
                 opacity=0.5,
                 showlegend=False
             )
         )
+    # Calculate explicit best, worst, and mean paths
+    best_idx = int(np.argmax(final_prices))
+    worst_idx = int(np.argmin(final_prices))
+    best_path = simulated_prices[:, best_idx]
+    worst_path = simulated_prices[:, worst_idx]
+    mean_path = simulated_prices.mean(axis=1)
+    
+    # Overlay explicit traces
     fig.add_trace(
         go.Scatter(
             x=x_values,
-            y=sim_results["simulated_prices"].mean(axis=1),
+            y=mean_path,
             mode='lines',
-            line=dict(color='red', width=2),
+            line=dict(color='red', width=3),
             name='Mean Path'
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=x_values,
+            y=best_path,
+            mode='lines',
+            line=dict(color='#DCEDFF', width=3),
+            name='Best Path'
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=x_values,
+            y=worst_path,
+            mode='lines',
+            line=dict(color='#5B7C99', width=3),
+            name='Worst Path'
         )
     )
     fig.update_layout(
@@ -152,9 +182,31 @@ if st.button("Run Simulation"):
     )
     st.plotly_chart(fig)
 
-    # Prepare CSV for download
+    # --------------------
+    # 2) Final Price Distribution Histogram
+    # --------------------
+    st.markdown("<h3 style='text-align:center'>Distribution of Final Prices</h3>", unsafe_allow_html=True)
+    fig_hist = go.Figure()
+    fig_hist.add_trace(
+        go.Histogram(
+            x=final_prices,
+            nbinsx=50,
+            marker_color='#ff0000',  # Red (same as download button)
+            opacity=0.7
+        )
+    )
+    fig_hist.update_layout(
+        xaxis_title="Final Price",
+        yaxis_title="Frequency",
+        template="plotly_dark" if st.session_state["dark_mode"] else "plotly_white"
+    )
+    st.plotly_chart(fig_hist, use_container_width=True)
+
+    # --------------------
+    # 3) Download Button
+    # --------------------
     csv_filename = f"MonteCarlo_{ticker}.csv"
-    csv_data = pd.DataFrame(sim_results["simulated_prices"])
+    csv_data = pd.DataFrame(simulated_prices)
     csv_data.index = range(1, num_days + 2)
     csv_data.index.name = "Day"
     csv_data.columns = [f"Simulation {i+1}" for i in range(num_simulations)]
