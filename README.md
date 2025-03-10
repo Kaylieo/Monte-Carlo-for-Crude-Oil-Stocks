@@ -66,33 +66,42 @@ streamlit run Monte_Carlo_UI.py
 
 ## 📌 Key Calculations
 
-**1️⃣ Monte Carlo Path Generation**
+**1️⃣ Multi-Step EGARCH Volatility Forecast**
 
-The stock price at each time step is simulated using the Geometric Brownian Motion (GBM) formula:
+We fit an AR(1)-EGARCH(1,1) model (with skew-t innovations) to historical returns:
+
+This yields a time-varying volatility (\sigma_t) for each forecast day via the EGARCH recursion.
+
+The model captures leverage effects and heavier tails (skew-t) better than a basic Gaussian assumption.
+
+**2️⃣ Monte Carlo Price Updates**
+
+Each day’s stock price is updated using a stochastic process:
 
 [
-S_t = S_{t-1} \times e^{(\mu - 0.5\sigma^2)dt + \sigma \sqrt{dt} \cdot Z}
+S_t = S_{t-1} \times \exp \Bigl((\mu - \tfrac{1}{2}\sigma_t^2),\Delta t ;+; \sigma_t \sqrt{\Delta t}\cdot Z_t\Bigr)
 ]
 
 Where:
 
 	•	( S_t ) = Simulated stock price at time ( t )
 
-	•	( \mu ) = Mean of historical daily returns
+	•	( \mu ) = Annualized mean of historical returns (drift)
 
-	•	( \sigma ) = Standard deviation (volatility) of historical returns
+	•	( \sigma ) = EGARCH(1,1)-based volatility forecast for day ( t )
 
-	•	( dt ) = Time step (1 trading day, typically ( \frac{1}{252} ))
+	•	( \Delta t ) = 1 trading day ((\tfrac{1}{252}))
 
-	•	( Z ) = Random standard normal variable
+	•	( Z_t ) = Random draw from a skew-t distribution
 
-**2️⃣ Expected Price at Final Time (T)**
+**3️⃣ Expected Price at Final Time (T)**
 
-The expected stock price at the end of the simulation is computed as:
+The expected stock price at the end of the simulation horizon is:
 
 [
 E[S_T] = \frac{1}{N} \sum_{i=1}^{N} S_{T}^{(i)}
 ]
+
 
 Where:
 
@@ -102,7 +111,7 @@ Where:
 
 	•	( N ) = Number of simulations
 
-**3️⃣ Value at Risk (VaR) - 5%**
+**4️⃣ Value at Risk (VaR) - 5%**
 
 Value at Risk represents the worst expected loss over a given time horizon at a 5% confidence level:
 
@@ -112,7 +121,7 @@ VaR = \text{5th percentile of simulated final prices}
 
 This means there is a 5% chance that the stock price will fall below this value at the end of the simulation.
 
-**4️⃣ Conditional Value at Risk (CVaR) - Expected Shortfall**
+**5️⃣ Conditional Value at Risk (CVaR) - Expected Shortfall**
 
 Conditional VaR (Expected Shortfall) estimates the average loss if the price falls below VaR:
 
