@@ -1,10 +1,40 @@
+import os
+os.environ["RPY2_NO_CONTEXTVAR"] = "1"
+
 import streamlit as st
 import pandas as pd
 import sqlite3
 import subprocess
 import plotly.graph_objects as go
 import numpy as np
-from monte_carlo import run_simulation_logic
+from monte_carlo import run_simulation_logic, run_ms_egarch_simulation_logic
+from rpy2 import robjects
+from rpy2.robjects import numpy2ri, pandas2ri
+
+# Activate automatic conversion for numpy and pandas objects
+numpy2ri.activate()
+pandas2ri.activate()
+
+# --- Define a cached R function loader for the Markov-switching EGARCH model ---
+@st.cache_resource
+def get_ms_egarch_fit():
+    """
+    Loads the R function 'ms_egarch_fit' using MSGARCH.
+    This function is cached to run only once in a single-threaded context.
+    """
+    r_code = """
+    ms_egarch_fit <- function(returns_vector) {
+      if(!require(MSGARCH)) {
+        install.packages("MSGARCH", repos = "https://cran.rstudio.com/")
+        library(MSGARCH)
+      }
+      spec <- CreateSpec(model = "MS-GARCH", distribution = "sstd", K = 2)
+      fit <- FitML(spec, returns_vector)
+      return(fit)
+    }
+    """
+    robjects.r(r_code)
+    return robjects.globalenv['ms_egarch_fit']
 
 st.set_page_config(page_title="Monte Carlo Simulation", layout="wide")
 
@@ -13,7 +43,7 @@ if "dark_mode" not in st.session_state:
     st.session_state["dark_mode"] = False
 st.session_state["dark_mode"] = st.toggle("Toggle Dark Mode", value=st.session_state["dark_mode"])
 
-# Colors
+# Colors: define text_color, background_color, etc.
 if st.session_state["dark_mode"]:
     background_color = "#000000"
     text_color = "white"
@@ -79,6 +109,9 @@ ticker = st.selectbox("Select Crude Oil Stock:", crude_oil_stocks)
 num_simulations = st.slider("Number of Simulations:", min_value=1000, max_value=10000, step=1000, value=5000)
 num_days = st.slider("Time Horizon (Days):", min_value=10, max_value=180, step=10, value=30)
 
+# Let the user select the model type:
+model_type = st.radio("Select Model Type:", ("Standard EGARCH", "Markov-switching EGARCH (MSGARCH via R)"))
+
 def fetch_latest_stock_data(ticker):
     """Fetch latest data from Yahoo via Fetch_Data.py, then read from SQLite."""
     try:
@@ -99,31 +132,37 @@ else:
     st.success(f"✅ Data for {ticker} loaded successfully.")
 
 if st.button("Run Simulation"):
-    # Make columns lowercase for consistency
     historical_data.columns = historical_data.columns.str.lower()
 
-    try:
-        sim_results = run_simulation_logic(historical_data, ticker, num_days, num_simulations)
-    except ValueError as ve:
-        st.error(f"⚠️ {ve}")
-        st.stop()
-    except Exception as e:
-        st.error(f"An unexpected error occurred: {e}")
-        st.stop()
+    # Use the selected model type
+    if model_type == "Standard EGARCH":
+        try:
+            sim_results = run_simulation_logic(historical_data, ticker, num_days, num_simulations)
+        except ValueError as ve:
+            st.error(f"⚠️ {ve}")
+            st.stop()
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
+            st.stop()
+    else:
+        try:
+            sim_results = run_ms_egarch_simulation_logic(historical_data, ticker, num_days, num_simulations)
+        except ValueError as ve:
+            st.error(f"⚠️ {ve}")
+            st.stop()
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
+            st.stop()
 
-    # EGARCH model summary is printed to the terminal
     st.info("EGARCH model summary has been printed to the terminal.")
 
     final_prices = sim_results["final_prices"]
     simulated_prices = sim_results["simulated_prices"]
     initial_price = sim_results["initial_price"]
 
-    # --------------------
-    # 1) Plot All Simulated Paths with Explicit Best, Worst, and Mean Paths
-    # --------------------
+    # Plot simulated paths with explicit best, worst, and mean paths
     x_values = list(range(num_days + 1))
     fig = go.Figure()
-    # Plot all simulated paths (spaghetti plot)
     for i in range(num_simulations):
         fig.add_trace(
             go.Scatter(
@@ -135,14 +174,11 @@ if st.button("Run Simulation"):
                 showlegend=False
             )
         )
-    # Calculate explicit best, worst, and mean paths
     best_idx = int(np.argmax(final_prices))
     worst_idx = int(np.argmin(final_prices))
     best_path = simulated_prices[:, best_idx]
     worst_path = simulated_prices[:, worst_idx]
     mean_path = simulated_prices.mean(axis=1)
-    
-    # Overlay explicit traces
     fig.add_trace(
         go.Scatter(
             x=x_values,
@@ -182,16 +218,14 @@ if st.button("Run Simulation"):
     )
     st.plotly_chart(fig)
 
-    # --------------------
-    # 2) Final Price Distribution Histogram
-    # --------------------
+    # Plot Final Price Distribution Histogram
     st.markdown("<h3 style='text-align:center'>Distribution of Final Prices</h3>", unsafe_allow_html=True)
     fig_hist = go.Figure()
     fig_hist.add_trace(
         go.Histogram(
             x=final_prices,
             nbinsx=50,
-            marker_color='#ff0000',  # Red (same as download button)
+            marker_color='#ff0000',
             opacity=0.7
         )
     )
@@ -202,16 +236,13 @@ if st.button("Run Simulation"):
     )
     st.plotly_chart(fig_hist, use_container_width=True)
 
-    # --------------------
-    # 3) Download Button
-    # --------------------
+    # Download button
     csv_filename = f"MonteCarlo_{ticker}.csv"
     csv_data = pd.DataFrame(simulated_prices)
     csv_data.index = range(1, num_days + 2)
     csv_data.index.name = "Day"
     csv_data.columns = [f"Simulation {i+1}" for i in range(num_simulations)]
     csv_data = csv_data.round(2).reset_index()
-
     col1, col2, col3 = st.columns([3, 1, 3])
     with col2:
         st.download_button(
@@ -238,7 +269,6 @@ if st.button("Run Simulation"):
 st.markdown("<hr style='border: 1px solid #ff0000;'>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; color: {text_color};'>Historical Prices</h2>", unsafe_allow_html=True)
 
-# Format and display the last 10 days of historical data
 styled_df = historical_data[["date", "close"]].tail(10).copy()
 styled_df["close"] = styled_df["close"].apply(lambda x: f"{x:.2f}")
 st.markdown(

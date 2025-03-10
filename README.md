@@ -40,9 +40,8 @@ git clone https://github.com/Kaylieo/Monte-Carlo-for-Crude-Oil-Stocks.git
 cd Monte-Carlo-for-Crude-Oil-Stocks
 
 2️⃣ Create Virtual Environment:
-python3 -m venv venv
-source venv/bin/activate  # Mac/Linux
-venv\Scripts\activate     # Windows
+conda env create -f environment.yml
+conda activate MonteCarloEnv # Mac/Linux
 
 3️⃣ Install Dependencies:
 pip install -r requirements.txt
