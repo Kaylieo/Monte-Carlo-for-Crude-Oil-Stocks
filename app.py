@@ -193,7 +193,7 @@ if st.button("Run Simulation"):
             x=x_values,
             y=best_path,
             mode='lines',
-            line=dict(color='#DCEDFF', width=3),
+            line=dict(color='green', width=3),
             name='Best Path'
         )
     )
@@ -202,7 +202,7 @@ if st.button("Run Simulation"):
             x=x_values,
             y=worst_path,
             mode='lines',
-            line=dict(color='#5B7C99', width=3),
+            line=dict(color='blue', width=3),
             name='Worst Path'
         )
     )
