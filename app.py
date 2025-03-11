@@ -67,7 +67,9 @@ st.markdown(
             background-color: {button_color}; color: white; border-radius: 10px; padding: 10px;
             border: none; font-weight: bold;
         }}
-        div.stButton > button:hover, .stDownloadButton > button:hover {{ background-color: #cc0000; }}
+        div.stButton > button:hover, .stDownloadButton > button:hover {{
+            background-color: #cc0000;
+        }}
         .stMarkdown, .stText, .stSelectbox, .stSlider label, .stSlider div, label {{
             color: {text_color} !important; font-weight: bold;
         }}
@@ -95,6 +97,14 @@ st.markdown(
         }}
         h2 {{
             text-align: center;
+        }}
+        
+        /* Ensure the radio button labels use the same text color in dark mode */
+        [data-testid="stRadio"] label,
+        [data-testid="stRadio"] label span,
+        [data-testid="stRadio"] label div,
+        [data-testid="stRadio"] label p {{
+            color: {text_color} !important;
         }}
     </style>
     """,
