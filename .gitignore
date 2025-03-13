@@ -1,2 +1,14 @@
 # Ignore the SQLite database
 stock_data.db
+BP.csv
+COP.csv
+CVX.csv
+EOG.csv
+XOM.csv
+HES.csv
+MPC.csv
+OXY.csv
+PSX.csv
+VLO.csv
+XOM.csv
+backtest_results.csv
