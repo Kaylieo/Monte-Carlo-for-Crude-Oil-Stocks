@@ -35,19 +35,21 @@ MonteCarlo/
 
 ## 🛠 Installation & Setup
 ```bash
+# If you don't have conda installed, download and install Miniconda:
+# 1. Visit https://docs.conda.io/en/latest/miniconda.html
+# 2. Download the installer for your operating system.
+# 3. Run the installer and follow the on-screen instructions.
+
 1️⃣ Clone the Repository:
 git clone https://github.com/Kaylieo/Monte-Carlo-for-Crude-Oil-Stocks.git
 cd Monte-Carlo-for-Crude-Oil-Stocks
 
 2️⃣ Create Virtual Environment:
 conda env create -f environment.yml
-conda activate MonteCarloEnv # Mac/Linux
+conda activate MonteCarloEnv
 
-3️⃣ Install Dependencies:
-pip install -r requirements.txt
-
-4️⃣ Run the Streamlit App:
-streamlit run Monte_Carlo_UI.py
+3️⃣ Run the Streamlit App:
+streamlit run app.py
 ```
 ---
 
