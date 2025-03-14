@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # ------------------------------
 # 1. Load and Prepare Historical Data
 # ------------------------------
-historical_data = pd.read_csv("BP.csv", parse_dates=["date"])
+historical_data = pd.read_csv("VLO.csv", parse_dates=["date"])
 historical_data.sort_values("date", inplace=True)
 
 # ------------------------------
@@ -18,11 +18,11 @@ train_end_date = pd.Timestamp("2018-12-31")
 test_data = historical_data[historical_data["date"] > train_end_date].copy()
 
 num_simulations = 5000
-forecast_horizon = 5       # Multi-day forecast horizon (e.g., 5 days)
+forecast_horizon = 10     # Multi-day forecast horizon (e.g., 5 days)
 confidence_level = 0.95
 var_probability = 1 - confidence_level  # 0.05 for 5% VaR
 
-step = 30  # Only run the simulation every 30 days to reduce computation
+step = 15  # Only run the simulation every 30 days to reduce computation
 
 # ------------------------------
 # 3. Initialize Counters and Storage

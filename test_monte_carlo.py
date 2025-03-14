@@ -1,77 +1,71 @@
-# test_monte_carlo.py
 import pytest
 import pandas as pd
-from unittest.mock import patch
 import numpy as np
+from monte_carlo import _validate_and_prepare_data, run_ms_egarch_simulation_logic
 
-# Import your function from Monte_Carlo_UI.py
-# e.g.:
-# from Monte_Carlo_UI import run_simulation_logic
+def test_validate_and_prepare_data_valid():
+    # Create a simple valid DataFrame with the required columns.
+    data = {
+        "date": ["2020-01-01", "2020-01-02", "2020-01-03"],
+        "close": [100, 102, 101]
+    }
+    df = pd.DataFrame(data)
+    
+    historical_prices, returns = _validate_and_prepare_data(df, "TEST")
+    
+    # Check that historical_prices and returns are Pandas Series
+    assert isinstance(historical_prices, pd.Series)
+    assert isinstance(returns, pd.Series)
+    
+    # historical_prices should have length 3, returns should have length 2 (since returns = pct_change dropna)
+    assert len(historical_prices) == 3
+    assert len(returns) == 2
+    
+    # Check that the first return is approximately (102/100 - 1) = 0.02
+    np.testing.assert_almost_equal(returns.iloc[0], 0.02, decimal=2)
 
-def make_dummy_data(rows=5, include_close=True, include_date=True):
-    """
-    Create a simple DataFrame for testing.
-    By default includes 'date' and 'close' columns with dummy values.
-    """
-    columns = {}
-    if include_date:
-        # Use a date range for the 'date' column
-        columns["date"] = pd.date_range("2022-01-01", periods=rows)
-    if include_close:
-        columns["close"] = np.linspace(100, 110, rows)  # dummy ascending prices
-    # Add any other columns if needed
-    return pd.DataFrame(columns)
+def test_validate_and_prepare_data_missing_column():
+    # Create a DataFrame missing the 'close' column.
+    data = {
+        "date": ["2020-01-01", "2020-01-02", "2020-01-03"],
+        "open": [100, 102, 101]
+    }
+    df = pd.DataFrame(data)
+    
+    with pytest.raises(ValueError, match="Missing required columns"):
+        _validate_and_prepare_data(df, "TEST")
 
-def test_run_simulation_logic_missing_close():
-    """
-    If 'close' column is missing, we expect an error/stop.
-    """
-    # Create data without 'close'
-    df = make_dummy_data(include_close=False)
-    with pytest.raises(Exception) as excinfo:
-        # If you're using st.stop(), it raises a Streamlit StopException,
-        # which is a subclass of BaseException. So you might catch BaseException or StopException.
-        # Or if you replaced st.stop() with raise SystemExit, you'd do pytest.raises(SystemExit).
-        from monte_carlo import run_simulation_logic
-        run_simulation_logic(df, "XOM", 30, 1000)
-    # Optionally check the error message
-    # assert "missing for XOM" in str(excinfo.value)
+def test_validate_and_prepare_data_insufficient_data():
+    # Create a DataFrame with only one row (insufficient to compute returns).
+    data = {
+        "date": ["2020-01-01"],
+        "close": [100]
+    }
+    df = pd.DataFrame(data)
+    
+    with pytest.raises(ValueError, match="Not enough historical data"):
+        _validate_and_prepare_data(df, "TEST")
 
-def test_run_simulation_logic_missing_date():
-    """
-    If 'date' column is missing, we expect an error/stop.
-    """
-    df = make_dummy_data(include_date=False)
-    with pytest.raises(Exception):
-        from monte_carlo import run_simulation_logic
-        run_simulation_logic(df, "XOM", 30, 1000)
-
-def test_run_simulation_logic_empty_data():
-    """
-    If DataFrame is empty, we expect an error/stop.
-    """
-    df = pd.DataFrame(columns=["date", "close"])  # columns exist but no rows
-    with pytest.raises(Exception):
-        from monte_carlo import run_simulation_logic
-        run_simulation_logic(df, "XOM", 30, 1000)
-
-def test_run_simulation_logic_insufficient_data():
-    """
-    If there's only 1 row, we can't compute returns => error/stop.
-    """
-    df = make_dummy_data(rows=1)  # only 1 row => no returns
-    with pytest.raises(Exception):
-        from monte_carlo import run_simulation_logic
-        run_simulation_logic(df, "XOM", 30, 1000)
-
-def test_run_simulation_logic_success():
-    """
-    Normal case: multiple rows, date & close present => should succeed
-    """
-    df = make_dummy_data(rows=200)
-    from monte_carlo import run_simulation_logic
-    result = run_simulation_logic(df, "XOM", 30, 1000)
-    assert "final_prices" in result
-    assert len(result["final_prices"]) == 1000
-    assert "expected_price" in result
-    # etc. for additional checks
+# Mark this test as an integration test since it relies on R and the MSGARCH package.
+# @pytest.mark.skip(reason="Integration test: requires R and MSGARCH installed")
+def test_run_ms_egarch_simulation_logic_single_day():
+    # Create a DataFrame with valid historical data.
+    data = {
+        "date": ["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"],
+        "close": [100, 102, 101, 103]
+    }
+    df = pd.DataFrame(data)
+    
+    # Run the simulation for a single day with a small number of simulations.
+    result = run_ms_egarch_simulation_logic(df, "TEST", num_days=1, num_simulations=100)
+    
+    # Expected keys in the result dictionary.
+    expected_keys = {
+        "final_prices", "initial_price", "expected_price",
+        "std_dev", "var_5pct", "cvar_5pct", "simulated_prices", "model_summary"
+    }
+    assert expected_keys.issubset(result.keys())
+    
+    # Check that final_prices is a NumPy array of the correct length.
+    assert isinstance(result["final_prices"], np.ndarray)
+    assert result["final_prices"].shape[0] == 100

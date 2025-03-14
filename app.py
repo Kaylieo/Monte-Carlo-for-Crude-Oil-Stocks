@@ -17,18 +17,46 @@ pandas2ri.activate()
 
 st.set_page_config(page_title="Monte Carlo Simulation", layout="wide")
 
-# Dark mode toggle
+# -------------------------
+# COLOR PALETTE
+# -------------------------
+primary_color = "#73648A"      # Primary color for buttons
+secondary_color = "#0F0326"    # Dark mode background
+neutral_color = "#EBE8FC"      # Light mode background
+
+# -------------------------
+# DARK MODE BUTTON
+# -------------------------
 if "dark_mode" not in st.session_state:
     st.session_state["dark_mode"] = False
-st.session_state["dark_mode"] = st.toggle("Toggle Dark Mode", value=st.session_state["dark_mode"])
 
-# Colors for dark/light mode
-background_color = "#000000" if st.session_state["dark_mode"] else "#ffffff"
-text_color = "white" if st.session_state["dark_mode"] else "black"
-button_color = "#ff0000"
-slider_color = "#ff0000"
+button_label = "Light Mode" if st.session_state["dark_mode"] else "Dark Mode"
 
-# Custom CSS
+if st.button(button_label):
+    st.session_state["dark_mode"] = not st.session_state["dark_mode"]
+    st.rerun()  # Forces immediate rerun so the label changes right away
+
+# -------------------------
+# SET COLORS BASED ON DARK MODE
+# -------------------------
+if st.session_state["dark_mode"]:
+    background_color = secondary_color
+    text_color = neutral_color
+    button_color = primary_color
+    slider_color = primary_color
+    hr_border_color = primary_color
+    button_hover_color = primary_color
+else:
+    background_color = neutral_color
+    text_color = secondary_color
+    button_color = primary_color
+    slider_color = primary_color
+    hr_border_color = primary_color
+    button_hover_color = primary_color
+
+# -------------------------
+# CUSTOM CSS
+# -------------------------
 st.markdown(
     f"""
     <style>
@@ -36,32 +64,110 @@ st.markdown(
             background-color: {background_color};
             color: {text_color};
         }}
+
+        /* Buttons (Run Simulation, Download, etc.) */
         div.stButton > button, .stDownloadButton > button {{
-            background-color: {button_color}; color: white; border-radius: 10px;
-            padding: 10px; border: none; font-weight: bold;
+            background-color: {button_color}; 
+            color: white; 
+            border-radius: 10px;
+            padding: 10px; 
+            border: none; 
+            font-weight: bold;
         }}
+        /* Hover color for active buttons */
         div.stButton > button:hover, .stDownloadButton > button:hover {{
-            background-color: #cc0000;
+            background-color: #5C4E72 !important; /* Slightly darker purple */
+            color: white !important;
         }}
-        .stMarkdown, .stText, .stSelectbox, .stSlider label,
-        .stSlider div, label, [data-testid="stWidgetLabel"] {{
+        /* Focus & Active states - override red */
+        div.stButton > button:focus,
+        div.stButton > button:active,
+        div.stButton > button:focus:active,
+        div.stButton > button:focus:not(:disabled) {{
+            background-color: #5C4E72 !important;
+            color: white !important;
+            border: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }}
+
+        /* Disabled button color override */
+        div.stButton > button[disabled],
+        div.stButton > button:disabled,
+        div.stButton > button[aria-disabled="true"],
+        div.stButton > button[disabled]:hover,
+        div.stButton > button:disabled:hover,
+        div.stButton > button[aria-disabled="true"]:hover {{
+            background-color: {button_color} !important;
+            color: white !important;
+            opacity: 0.6 !important;
+            cursor: not-allowed !important;
+            border: none !important;
+            box-shadow: none !important;
+        }}
+
+        /* Text elements */
+        .stMarkdown,
+        .stText,
+        .stSelectbox,
+        .stSlider label,
+        .stSlider div,
+        label,
+        [data-testid="stWidgetLabel"] {{
             color: {text_color} !important;
             font-weight: bold;
         }}
-        .stSlider > div[role="slider"] {{
+
+        /* --- Slider Styling (Only Change Selected Track + Handle) --- */
+
+        /* 1. The selected track portion (from min to handle) */
+        [data-baseweb="slider"] > div:nth-child(2) [role="progressbar"] {{
             background-color: {slider_color} !important;
         }}
+
+        /* 2. The handle (knob) */
+        [data-baseweb="slider"] [role="slider"] {{
+            background-color: {slider_color} !important;
+            border: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+            width: 15px !important;
+            height: 15px !important;
+            border-radius: 50% !important;
+        }}
+
+        /* Optional: Handle hover/focus states */
+        [data-baseweb="slider"] [role="slider"]:hover,
+        [data-baseweb="slider"] [role="slider"]:focus {{
+            background-color: {slider_color} !important;
+            border: none !important;
+            box-shadow: 0 0 0 2px {slider_color}40 !important;
+            outline: none !important;
+        }}
+
+        /* Dropdown (select box) border styling */
+        [data-testid="stSelectbox"] div[role="listbox"] {{
+            border: 2px solid {primary_color} !important;
+        }}
+
+        /* Header alignment */
         h1, h2 {{
             text-align: center;
         }}
+
+        /* Center notifications & buttons */
         div[data-testid="stNotification"], div.stButton {{
             display: flex;
             justify-content: center;
         }}
+
+        /* DataFrame styling */
         .stDataFrame {{
             margin: auto;
             width: 80% !important;
         }}
+
+        /* Radio button text color fix */
         [data-testid="stRadio"] label,
         [data-testid="stRadio"] label span,
         [data-testid="stRadio"] label div,
@@ -73,6 +179,9 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# -------------------------
+# APP CONTENT
+# -------------------------
 st.title("Monte Carlo Simulation (Markov-switching EGARCH)")
 
 # Crude oil stocks
@@ -85,7 +194,6 @@ num_days = st.slider("Time Horizon (Days):", min_value=10, max_value=180, step=1
 # Info message about Markov-switching
 st.info("A Markov-switching EGARCH model summary will be printed to the terminal once you run the simulation.")
 
-# Fetch data from SQLite
 def fetch_latest_stock_data(ticker):
     try:
         subprocess.run(["python", "Fetch_Data.py"], check=True)
@@ -146,7 +254,7 @@ if st.button("Run Simulation"):
     mean_path = simulated_prices.mean(axis=1)
 
     fig.add_trace(go.Scatter(x=x_values, y=mean_path, mode='lines',
-                             line=dict(color='red', width=3), name='Mean Path'))
+                             line=dict(color=primary_color, width=3), name='Mean Path'))
     fig.add_trace(go.Scatter(x=x_values, y=best_path, mode='lines',
                              line=dict(color='green', width=3), name='Best Path'))
     fig.add_trace(go.Scatter(x=x_values, y=worst_path, mode='lines',
@@ -167,7 +275,7 @@ if st.button("Run Simulation"):
         go.Histogram(
             x=final_prices,
             nbinsx=50,
-            marker_color='#ff0000',
+            marker_color=primary_color,
             opacity=0.7
         )
     )
@@ -195,7 +303,7 @@ if st.button("Run Simulation"):
             mime="text/csv"
         )
 
-    st.markdown("<hr style='border: 1px solid #ff0000;'>", unsafe_allow_html=True)
+    st.markdown(f"<hr style='border: 1px solid {hr_border_color};'>", unsafe_allow_html=True)
     st.markdown(
         f"""
         <div style="text-align: center;">
@@ -209,7 +317,7 @@ if st.button("Run Simulation"):
         unsafe_allow_html=True
     )
 
-st.markdown("<hr style='border: 1px solid #ff0000;'>", unsafe_allow_html=True)
+st.markdown(f"<hr style='border: 1px solid {hr_border_color};'>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; color: {text_color};'>Historical Prices</h2>", unsafe_allow_html=True)
 
 styled_df = historical_data[["date", "close"]].tail(10).copy()
