@@ -192,7 +192,16 @@ num_simulations = st.slider("Number of Simulations:", min_value=1000, max_value=
 num_days = st.slider("Time Horizon (Days):", min_value=10, max_value=180, step=10, value=30)
 
 # Info message about Markov-switching
-st.info("A Markov-switching EGARCH model summary will be printed to the terminal once you run the simulation.")
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <div class="stInfo">
+            A Markov-switching EGARCH model summary will be printed to the terminal once you run the simulation.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 def fetch_latest_stock_data(ticker):
     try:
@@ -210,7 +219,16 @@ if historical_data is None or historical_data.empty:
     st.error(f"⚠️ Data for {ticker} is unavailable.")
     st.stop()
 else:
-    st.success(f"✅ Data for {ticker} loaded successfully.")
+    st.markdown(
+        f"""
+        <div style="text-align: center;">
+            <div class="stSuccess">
+                Data for {ticker} loaded successfully.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 def run_simulation():
     """Call the Markov-switching EGARCH simulation function safely."""
