@@ -1,171 +1,139 @@
-# Monte Carlo Simulation for Crude Oil Stocks
+# Monte Carlo Simulation for Crude Oil Stocks with Markov-Switching EGARCH
 
-A **Streamlit-based** Monte Carlo simulation for predicting crude oil stock prices using **historical data** and **stochastic modeling**.
+A sophisticated financial modeling application that combines **Markov-switching EGARCH** (MS-EGARCH) with Monte Carlo simulation to forecast crude oil stock prices. Built with Python, R, and Streamlit, featuring an elegant dark/light mode UI.
 
----
+## 🔬 Technical Overview
 
-## Features
+This project implements a hybrid Python-R architecture for advanced financial modeling:
 
-✅ **Stock Selection** - Choose from major crude oil stocks (XOM, CVX, BP, etc.)  
-✅ **Monte Carlo Simulations** - Run up to **10,000** simulations  
-✅ **Time Horizon Customization** - Forecast stock prices up to **180 days**  
-✅ **Interactive UI** - Built with **Streamlit**  
-✅ **Visualizations** - Multi-colored **Plotly** line charts  
-✅ **Risk Metrics** - Calculates **Expected Price, VaR, and CVaR**  
+- **MS-EGARCH Model**: Captures regime-switching volatility dynamics using a 2-state Markov chain
+- **Skewed Student-t Distribution**: Models heavy-tailed returns and asymmetric volatility responses
+- **Sobol Sequences**: Low-discrepancy sequences for more efficient Monte Carlo sampling
+- **Python-R Bridge**: Leverages `rpy2` for seamless integration with R's MSGARCH package
 
----
+## ✨ Key Features
 
-## 📂 Project Structure
+### Advanced Modeling
+- 🔄 **Markov-Switching EGARCH**: Regime-switching volatility model
+- 📊 **Skewed Student-t Innovations**: Better tail risk modeling
+- 🎲 **Sobol Sequence Sampling**: Improved Monte Carlo efficiency
+- 📈 **Multi-Day Path Generation**: Iterative simulation without refitting
 
+### Risk Analytics
+- 📉 **Value at Risk (VaR)**: 5% confidence level risk metrics
+- 💹 **Conditional VaR**: Expected shortfall calculations
+- 📊 **Volatility Forecasting**: EGARCH-based predictions
+- 📈 **Return Distribution Analysis**: Full distribution metrics
+
+### User Interface
+- 🌓 **Dark/Light Mode**: Elegant theme switching
+- 📱 **Responsive Design**: Custom CSS with modern aesthetics
+- 📊 **Interactive Plots**: Real-time Plotly visualizations
+- 💾 **Data Export**: Download simulation results as CSV
+
+### Stock Coverage
+- 🛢️ **Major Oil Companies**: XOM, CVX, BP, COP
+- ⚡ **Refiners**: VLO, MPC, PSX
+- 🔍 **E&P Companies**: EOG, OXY, HES
+
+## 🔧 Technical Architecture
+
+```
 MonteCarlo/
+├── app.py                 # Streamlit UI with dark/light mode
+├── monte_carlo.py         # Core MS-EGARCH simulation engine
+├── fetch_data.py         # Stock data acquisition module
+├── backtest.py          # Model validation framework
+├── diagnostics.py       # Model diagnostic tools
+├── test_monte_carlo.py  # Unit tests
+├── environment.yml      # Conda environment specification
+└── install_older_packages.R  # R package dependencies
+```
 
-│── stock_data.db         **# SQLite database storing historical stock prices**
+## 📐 Mathematical Framework
 
-│── Monte_Carlo_UI.py     **# Streamlit app for user interaction**
+### 1. MS-EGARCH Specification
+The model switches between two volatility regimes using a Markov chain:
 
-│── Fetch_Data.py         **# Fetches stock data and stores in SQLite**
+```math
+r_t = μ_t + σ_{t,S_t}ε_t
+```
+where S_t ∈ {1,2} is the regime state and ε_t follows a skewed Student-t distribution.
 
-│── requirements.txt      **# Dependencies for the project**
+### 2. Price Path Generation
+Stock prices are simulated using:
+```math
+S_t = S_{t-1} exp((μ - σ_t²/2)Δt + σ_t√Δt Z_t)
+```
+where Z_t ~ skew-t(ν,λ) and σ_t is the MS-EGARCH volatility.
 
-│── README.md             **# Project documentation**
+## 🛠 Installation
 
-│── .gitignore            **# Files to be ignored in version control**
+### Prerequisites
+- Python 3.8+
+- R 4.0+
+- Conda package manager
 
----
-
-## 🛠 Installation & Setup
+### Setup Steps
+1. Clone and setup environment:
 ```bash
-# If you don't have conda installed, download and install Miniconda:
-# 1. Visit https://docs.conda.io/en/latest/miniconda.html
-# 2. Download the installer for your operating system.
-# 3. Run the installer and follow the on-screen instructions.
-
-1️⃣ Clone the Repository:
 git clone https://github.com/Kaylieo/Monte-Carlo-for-Crude-Oil-Stocks.git
 cd Monte-Carlo-for-Crude-Oil-Stocks
-
-2️⃣ Create Virtual Environment:
 conda env create -f environment.yml
 conda activate MonteCarloEnv
+```
 
-3️⃣ Run the Streamlit App:
+2. Install R dependencies:
+```bash
+Rscript install_older_packages.R
+```
+
+3. Launch application:
+```bash
 streamlit run app.py
 ```
----
 
-## 🖥️ Usage
+## 🎯 Usage
 
-1️⃣ **Select a crude oil stock** from the dropdown
+1. Select a crude oil stock (e.g., XOM, CVX)
+2. Configure simulation parameters:
+   - Number of simulations (up to 10,000)
+   - Time horizon (up to 180 days)
+3. Run simulation and analyze:
+   - Interactive price path visualization
+   - Distribution of final prices
+   - Risk metrics (VaR, CVaR)
+   - Download simulation data
 
-2️⃣ **Adjust** the number of simulations and time horizon
+## 🔬 Model Validation
 
-3️⃣ **Click “Run Simulation”** to generate Monte Carlo paths
+The MS-EGARCH model is validated through:
+- Out-of-sample backtesting
+- Regime classification accuracy
+- Volatility forecast evaluation
+- Residual diagnostics
 
-4️⃣ **View** the interactive chart and risk metrics
+## 📚 Dependencies
 
----
+### Python Packages
+- streamlit>=1.24.0
+- pandas>=1.5.0
+- numpy>=1.23.0
+- plotly>=5.13.0
+- rpy2>=3.5.0
+- arch>=5.0.0
+- scipy>=1.9.0
 
-## 📌 Key Calculations
-
-**1️⃣ Multi-Step EGARCH Volatility Forecast**
-
-We fit an AR(1)-EGARCH(1,1) model (with skew-t innovations) to historical returns:
-
-This yields a time-varying volatility (\sigma_t) for each forecast day via the EGARCH recursion.
-
-The model captures leverage effects and heavier tails (skew-t) better than a basic Gaussian assumption.
-
-**2️⃣ Monte Carlo Price Updates**
-
-Each day’s stock price is updated using a stochastic process:
-
-[
-S_t = S_{t-1} \times \exp \Bigl((\mu - \tfrac{1}{2}\sigma_t^2),\Delta t ;+; \sigma_t \sqrt{\Delta t}\cdot Z_t\Bigr)
-]
-
-Where:
-
-	•	( S_t ) = Simulated stock price at time ( t )
-
-	•	( \mu ) = Annualized mean of historical returns (drift)
-
-	•	( \sigma ) = EGARCH(1,1)-based volatility forecast for day ( t )
-
-	•	( \Delta t ) = 1 trading day ((\tfrac{1}{252}))
-
-	•	( Z_t ) = Random draw from a skew-t distribution
-
-**3️⃣ Expected Price at Final Time (T)**
-
-The expected stock price at the end of the simulation horizon is:
-
-[
-E[S_T] = \frac{1}{N} \sum_{i=1}^{N} S_{T}^{(i)}
-]
-
-
-Where:
-
-	•	( E[S_T] ) = Expected final price
-
-	•	( S_{T}^{(i)} ) = Final stock price from the ( i^{th} ) simulation
-
-	•	( N ) = Number of simulations
-
-**4️⃣ Value at Risk (VaR) - 5%**
-
-Value at Risk represents the worst expected loss over a given time horizon at a 5% confidence level:
-
-[
-VaR = \text{5th percentile of simulated final prices}
-]
-
-This means there is a 5% chance that the stock price will fall below this value at the end of the simulation.
-
-**5️⃣ Conditional Value at Risk (CVaR) - Expected Shortfall**
-
-Conditional VaR (Expected Shortfall) estimates the average loss if the price falls below VaR:
-
-[
-CVaR = \text{Mean of all values below VaR}
-]
-
-This provides a more accurate measure of tail risk compared to standard VaR.
-
----
-
-## 🏗 Future Improvements
-
-✅ Optimize performance for larger datasets
-
-✅ Add real-time stock data fetching from an API
-
-✅ Implement options pricing using Monte Carlo
-
----
-
-## 🤝 Contributing
-
-1️⃣ Fork the repository
-
-2️⃣ Create a new branch (git checkout -b feature-branch)
-
-3️⃣ Commit changes (git commit -m "Added feature XYZ")
-
-4️⃣ Push to GitHub (git push origin feature-branch)
-
-5️⃣ Submit a Pull Request
-
----
-
-## 📜 License
-
-This project is open-source under the MIT License.
-
----
+### R Packages
+- MSGARCH
+- rugarch
+- parallel
 
 ## 📬 Contact
 
-📧 Email: [Kaylieoneal@yahoo.com]
+- 📧 Email: [Kaylieoneal@yahoo.com]
+- 📍 GitHub: [Kaylieo](https://github.com/Kaylieo)
 
-📍 GitHub: Kaylieo
+## 📜 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
