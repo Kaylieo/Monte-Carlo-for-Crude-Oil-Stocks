@@ -125,9 +125,18 @@ The MS-EGARCH model is validated through:
 - scipy>=1.9.0
 
 ### R Packages
-- MSGARCH=2.51.0
+- MSGARCH
 - rugarch
 - parallel
+
+## 🚀 Future Improvements
+
+- **GPU Acceleration**: Implement CUDA support for faster Monte Carlo simulations
+- **Additional Asset Classes**: Extend modeling to natural gas and renewable energy stocks
+- **Advanced Regime Detection**: Implement machine learning-based regime classification
+- **Real-time Data Integration**: Add live market data feeds for continuous model updates
+- **Enhanced Visualization**: Add 3D surface plots for volatility term structure
+- **API Development**: Create RESTful API for programmatic access to simulations
 
 ## 📬 Contact
 

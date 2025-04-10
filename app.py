@@ -1,3 +1,6 @@
+# -------------------------
+# IMPORTS
+# -------------------------
 import os
 os.environ["RPY2_NO_CONTEXTVAR"] = "1"
 

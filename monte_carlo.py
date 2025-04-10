@@ -1,17 +1,25 @@
+# -------------------------
+# IMPORTS
+# -------------------------
+# Core data science
 import numpy as np
 import pandas as pd
 from arch import arch_model
 from scipy.stats import t
 from scipy.stats.qmc import Sobol
 
-# rpy2 modules for R bridging
+# R integration
 from rpy2 import robjects
 from rpy2.robjects import numpy2ri, pandas2ri
 from rpy2.robjects.conversion import localconverter
 from rpy2.robjects import default_converter
 
-from typing import Tuple
+# Type hints
+from typing import Tuple, Dict, Any, List
 
+# -------------------------
+# DATA VALIDATION
+# -------------------------
 def _validate_and_prepare_data(historical_data: pd.DataFrame, ticker: str) -> Tuple[pd.Series, pd.Series]:
     """
     Helper function to ensure the DataFrame has the required columns
@@ -38,10 +46,13 @@ def _validate_and_prepare_data(historical_data: pd.DataFrame, ticker: str) -> Tu
     
     return historical_prices, returns
 
+# -------------------------
+# SIMULATION LOGIC
+# -------------------------
 def run_ms_egarch_simulation_logic(historical_data: pd.DataFrame,
                                    ticker: str,
                                    num_days: int,
-                                   num_simulations: int) -> dict:
+                                   num_simulations: int) -> Dict[str, Any]:
     """
     If num_days == 1:
       Runs the original single-day MSGARCH code unchanged.
@@ -59,8 +70,10 @@ def run_ms_egarch_simulation_logic(historical_data: pd.DataFrame,
     with localconverter(default_converter + numpy2ri.converter + pandas2ri.converter):
         r_returns = robjects.FloatVector(returns.values)
     
+    # -------------------------
+    # SINGLE-DAY SIMULATION
+    # -------------------------
     if num_days == 1:
-        # ------------------- Original Single-Day Code -------------------
         mu = 0
         # Simplify the R code to avoid potential parsing issues.
         r_code = """ms_egarch_fit <- function(returns_vector) {
@@ -80,6 +93,9 @@ def run_ms_egarch_simulation_logic(historical_data: pd.DataFrame,
         robjects.r(r_code)
         ms_egarch_fit = robjects.globalenv['ms_egarch_fit']
 
+        # -------------------------
+        # MODEL FITTING
+        # -------------------------
         # Fit the model using the converted returns vector
         fit_result = ms_egarch_fit(r_returns)
         summary_output = robjects.r['capture.output'](robjects.r['summary'](fit_result))
@@ -129,8 +145,10 @@ def run_ms_egarch_simulation_logic(historical_data: pd.DataFrame,
             "simulated_prices": simulated_prices,
             "model_summary": summary_str
         }
+    # -------------------------
+    # MULTI-DAY SIMULATION
+    # -------------------------
     else:
-        # ------------------- Iterative Multi-Day Approach -------------------
         import numpy as np
         import pandas as pd
         from scipy.stats import t
@@ -170,7 +188,10 @@ def run_ms_egarch_simulation_logic(historical_data: pd.DataFrame,
         dt = 1 / 252
         dof = 5
 
-        def single_day_forecast(last_price_array: np.ndarray):
+                # -------------------------
+        # SINGLE DAY FORECAST
+        # -------------------------
+        def single_day_forecast(last_price_array: np.ndarray) -> np.ndarray:
             Simulate = robjects.r("MSGARCH:::simulate.MSGARCH_SPEC")
             sim_forecast = Simulate(fit_result, **{'n.ahead': 1, 'nsim': num_simulations})
             sim_forecast_list = list(sim_forecast)
@@ -194,6 +215,9 @@ def run_ms_egarch_simulation_logic(historical_data: pd.DataFrame,
             new_prices = single_day_forecast(last_price_array)
             simulated_prices[day] = new_prices
 
+        # -------------------------
+        # RESULTS COMPILATION
+        # -------------------------
         final_prices = simulated_prices[-1]
         return {
             "final_prices": final_prices,
