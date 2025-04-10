@@ -70,8 +70,8 @@ where Z_t ~ skew-t(ν,λ) and σ_t is the MS-EGARCH volatility.
 ## 🛠 Installation
 
 ### Prerequisites
-- Python 3.8+
-- R 4.0+
+- Python 3.12.9
+- R 4.3.3
 - Conda package manager
 
 ### Setup Steps
@@ -120,12 +120,12 @@ The MS-EGARCH model is validated through:
 - pandas>=1.5.0
 - numpy>=1.23.0
 - plotly>=5.13.0
-- rpy2>=3.5.0
-- arch>=5.0.0
+- rpy2=3.4.5
+- arch=7.2.0
 - scipy>=1.9.0
 
 ### R Packages
-- MSGARCH
+- MSGARCH=2.51.0
 - rugarch
 - parallel
 
