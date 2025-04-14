@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_percentage_error
-from monte_carlo import run_ms_egarch_simulation_logic
+from monte_carlo import MonteCarloSimulator
 
 
 def calculate_mape(simulated_prices: np.ndarray, real_prices: np.ndarray) -> float:
@@ -23,23 +23,26 @@ if __name__ == "__main__":
     num_days = 30
     num_simulations = 1000
 
-    # Load historical data (replace this with your actual historical data retrieval logic)
+    # Create sample historical data
     np.random.seed(0)
     dates = pd.date_range(start="2024-12-01", periods=100)
-    close_prices = np.cumsum(np.random.normal(0, 1, 100)) + 100
-    historical_data = pd.DataFrame({"date": dates, "close": close_prices})
-
-    # Split data into training and testing sets
-    training_data = historical_data.iloc[:-num_days]
-    testing_data = historical_data.iloc[-num_days:]
-
-    # Run your simulation logic
-    simulation_results = run_ms_egarch_simulation_logic(training_data, ticker, num_days, num_simulations)
-    simulated_prices = simulation_results["simulated_prices"].mean(axis=1)[1:]  # Mean price across simulations for each day
-
-    # Actual prices for testing period
-    real_prices = testing_data["close"].values
-
-    # Calculate accuracy
-    accuracy = calculate_mape(simulated_prices, real_prices)
-    print(f"Simulation Accuracy: {accuracy:.2f}%")
+    close_prices = pd.Series(np.cumsum(np.random.normal(0, 1, 100)) + 100, index=dates)
+    historical_data = pd.DataFrame({
+        'date': dates,
+        'close': close_prices
+    })
+    
+    # Initialize and run simulator
+    simulator = MonteCarloSimulator(ticker)
+    simulator.fit_model(historical_data)
+    results = simulator.run_simulation(num_days, num_simulations)
+    
+    # Calculate accuracy using the mean path
+    mean_path = results.simulated_prices.mean(axis=1)
+    actual_prices = close_prices[-num_days-1:].values
+    accuracy = calculate_mape(mean_path, actual_prices)
+    
+    print(f"Model Accuracy: {accuracy:.2f}%")
+    print(f"Expected Price after {num_days} days: ${results.expected_price:.2f}")
+    print(f"95% VaR: ${results.var_5pct:.2f}")
+    print(f"95% CVaR: ${results.cvar_5pct:.2f}")

@@ -10,7 +10,7 @@ import sqlite3
 import subprocess
 import numpy as np
 import plotly.graph_objects as go
-from monte_carlo import run_ms_egarch_simulation_logic  # Only Markov-switching now
+from monte_carlo import MonteCarloSimulator
 from rpy2 import robjects
 from rpy2.robjects import numpy2ri, pandas2ri
 
@@ -234,9 +234,11 @@ else:
     )
 
 def run_simulation():
-    """Call the Markov-switching EGARCH simulation function safely."""
+    """Run Monte Carlo simulation using the MonteCarloSimulator class."""
     try:
-        return run_ms_egarch_simulation_logic(historical_data, ticker, num_days, num_simulations)
+        simulator = MonteCarloSimulator(ticker)
+        simulator.fit_model(historical_data)
+        return simulator.run_simulation(num_days, num_simulations)
     except ValueError as ve:
         st.error(f"⚠️ {ve}")
         st.stop()
@@ -248,9 +250,9 @@ if st.button("Run Simulation"):
     historical_data.columns = historical_data.columns.str.lower()
     sim_results = run_simulation()
 
-    final_prices = sim_results["final_prices"]
-    simulated_prices = sim_results["simulated_prices"]
-    initial_price = sim_results["initial_price"]
+    final_prices = sim_results.final_prices
+    simulated_prices = sim_results.simulated_prices
+    initial_price = sim_results.initial_price
 
     x_values = list(range(num_days + 1))
     fig = go.Figure()
@@ -329,10 +331,10 @@ if st.button("Run Simulation"):
         f"""
         <div style="text-align: center;">
             <h3>📉 <strong>Initial Price ({ticker}):</strong> ${initial_price:.2f}</h3>
-            <h3>📈 <strong>Expected Price After {num_days} Days:</strong> ${sim_results["expected_price"]:.2f}</h3>
-            <h3>📊 <strong>Std. Dev. of Final Prices:</strong> ${sim_results["std_dev"]:.2f}</h3>
-            <h3>⚠️ <strong>5% VaR:</strong> ${sim_results["var_5pct"]:.2f}</h3>
-            <h3>🔻 <strong>Conditional VaR (Expected Shortfall):</strong> ${sim_results["cvar_5pct"]:.2f}</h3>
+            <h3>📈 <strong>Expected Price After {num_days} Days:</strong> ${sim_results.expected_price:.2f}</h3>
+            <h3>📊 <strong>Std. Dev. of Final Prices:</strong> ${sim_results.std_dev:.2f}</h3>
+            <h3>⚠️ <strong>5% VaR:</strong> ${sim_results.var_5pct:.2f}</h3>
+            <h3>🔻 <strong>Conditional VaR (Expected Shortfall):</strong> ${sim_results.cvar_5pct:.2f}</h3>
         </div>
         """,
         unsafe_allow_html=True
