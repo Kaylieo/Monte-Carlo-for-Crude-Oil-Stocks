@@ -43,11 +43,13 @@ MonteCarlo/
 ├── app.py                 # Streamlit UI with dark/light mode
 ├── monte_carlo.py         # Core MS-EGARCH simulation engine
 ├── fetch_data.py         # Stock data acquisition module
-├── backtest.py          # Model validation framework
-├── diagnostics.py       # Model diagnostic tools
-├── test_monte_carlo.py  # Unit tests
-├── environment.yml      # Conda environment specification
-└── install_older_packages.R  # R package dependencies
+├── backtest.py           # Model validation framework
+├── diagnostics.py        # Model diagnostic tools
+├── test_monte_carlo.py   # Unit tests
+├── environment.yml       # Conda environment specification
+├── conda-lock.yml        # Locked environment for exact reproducibility
+├── requirements.txt      # Pip dependencies
+└── install_older_packages.R  # Manual R package installation
 ```
 
 ## 📐 Mathematical Framework
@@ -63,32 +65,44 @@ where S_t ∈ {1,2} is the regime state and ε_t follows a skewed Student-t dist
 ### 2. Price Path Generation
 Stock prices are simulated using:
 ```math
-S_t = S_{t-1} exp((μ - σ_t²/2)Δt + σ_t√Δt Z_t)
+S_t = S_{t-1} \exp\left((μ - \frac{σ_t²}{2})Δt + σ_t\sqrt{Δt} Z_t\right)
 ```
 where Z_t ~ skew-t(ν,λ) and σ_t is the MS-EGARCH volatility.
 
-## 🛠 Installation
+## 🛠️ Installation (Exact Reproducibility)
 
 ### Prerequisites
 - Python 3.12.9
 - R 4.3.3
 - Conda package manager
 
-### Setup Steps
-1. Clone and setup environment:
+### Setup Instructions
+
+1. Clone the repository:
 ```bash
 git clone https://github.com/Kaylieo/Monte-Carlo-for-Crude-Oil-Stocks.git
 cd Monte-Carlo-for-Crude-Oil-Stocks
-conda env create -f environment.yml
-conda activate MonteCarloEnv
 ```
 
-2. Install R dependencies:
+2. Create and activate the environment using the lock file (recommended):
+```bash
+conda create -n msgarch_env --file conda-lock.yml
+conda activate msgarch_env
+```
+
+3. Install pip dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Install MSGARCH using the provided script:
 ```bash
 Rscript install_older_packages.R
 ```
 
-3. Launch application:
+> ✅ This installs MSGARCH v2.50
+
+5. Launch the app:
 ```bash
 streamlit run app.py
 ```
@@ -116,18 +130,18 @@ The MS-EGARCH model is validated through:
 ## 📚 Dependencies
 
 ### Python Packages
-- streamlit>=1.24.0
-- pandas>=1.5.0
-- numpy>=1.23.0
-- plotly>=5.13.0
-- rpy2=3.4.5
-- arch=7.2.0
-- scipy>=1.9.0
+See `requirements.txt` for pip-based packages.
 
 ### R Packages
-- MSGARCH
-- rugarch
-- parallel
+Installed via Conda (except MSGARCH):
+- r-base=4.3.3
+- r-mass=7.3_60.0.1
+- r-matrix=1.6_5
+- r-expm=1.0_0
+- r-codetools
+
+Manually install:
+- MSGARCH==2.50 (via `install_older_packages.R`)
 
 ## 🚀 Future Improvements
 
