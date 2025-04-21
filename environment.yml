@@ -1,20 +1,23 @@
-name: MonteCarloEnv
+name: msgarch_env
 channels:
   - conda-forge
   - defaults
 dependencies:
   - python=3.12.9
   - r-base=4.3.3
-  - rpy2==3.4.5
-  - r-msgarch==2.50.0                
-  - numpy
-  - pandas
-  - streamlit
-  - plotly
-  - matplotlib
-  - scipy
-  - yfinance
-  - pip                      
+  - rpy2=3.4.5
+  - r-mass=7.3_60.0.1  # installed via conda
+  - r-matrix=1.6_5     # installed via conda
+  - r-expm=1.0_0       # installed via conda
+  - r-codetools        # suppresses R warnings
+  - numpy==2.2.3
+  - pandas==2.2.3
+  - streamlit==1.42.2
+  - plotly==6.0.0
+  - matplotlib==3.10.0
+  - scipy==1.15.2
+  - yfinance==0.2.54
+  - pip
   - pip:
       - aiohappyeyeballs==2.4.6
       - aiohttp==3.11.13
@@ -37,27 +40,22 @@ dependencies:
       - gitdb==4.0.12
       - GitPython==3.1.44
       - idna==3.10
-      - "Jinja2>=3.1.6"
+      - Jinja2==3.1.6
       - jsonschema==4.23.0
       - jsonschema-specifications==2024.10.1
       - kiwisolver==1.4.8
       - lxml==5.3.1
       - markdown-it-py==3.0.0
       - MarkupSafe==3.0.2
-      - matplotlib==3.10.0
       - mdurl==0.1.2
       - multidict==6.1.0
       - multitasking==0.0.11
       - narwhals==1.27.1
-      - numpy==2.2.3
-      - packaging==24.2
-      - pandas==2.2.3
       - pandas-datareader==0.10.0
       - patsy==1.0.1
       - peewee==3.17.9
       - pillow==11.1.0
       - platformdirs==4.3.6
-      - plotly==6.0.0
       - propcache==0.3.0
       - protobuf==5.29.3
       - pyarrow==19.0.1
@@ -66,19 +64,18 @@ dependencies:
       - pyparsing==3.2.1
       - python-dateutil==2.9.0.post0
       - pytz==2025.1
-      - "pytest>=7.0.0"
+      - pytest>=7.0.0
       - referencing==0.36.2
       - requests==2.32.3
       - rich==13.9.4
       - rpds-py==0.23.1
-      - scipy==1.15.2
+      - scikit-learn==1.4.2
       - seaborn==0.13.2
       - setuptools==75.8.0
       - six==1.17.0
       - smmap==5.0.2
       - soupsieve==2.6
       - statsmodels==0.14.4
-      - streamlit==1.42.2
       - tenacity==9.0.0
       - toml==0.10.2
       - tornado==6.4.2
@@ -86,4 +83,8 @@ dependencies:
       - tzdata==2025.1
       - urllib3==2.3.0
       - yarl==1.18.3
-      - yfinance==0.2.54
+
+# Note:
+# The MSGARCH R package (version 2.50) is not included in this file and must be installed manually.
+# Run the provided install_older_packages.R script after the environment is created to install MSGARCH.
+

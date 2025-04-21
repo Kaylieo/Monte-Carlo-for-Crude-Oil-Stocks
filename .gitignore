@@ -10,3 +10,5 @@ OXY.csv
 PSX.csv
 VLO.csv
 backtest_results.csv
+__pycache__/
+*.pyc
