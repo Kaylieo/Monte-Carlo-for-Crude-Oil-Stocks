@@ -5,7 +5,6 @@ channels:
 dependencies:
   - python=3.12.9
   - r-base=4.3.3
-  - rpy2=3.4.5
   - r-mass=7.3_60.0.1  # installed via conda
   - r-matrix=1.6_5     # installed via conda
   - r-expm=1.0_0       # installed via conda
@@ -19,6 +18,7 @@ dependencies:
   - yfinance==0.2.54
   - pip
   - pip:
+      - rpy2==3.4.5
       - aiohappyeyeballs==2.4.6
       - aiohttp==3.11.13
       - aiosignal==1.3.2
@@ -88,3 +88,5 @@ dependencies:
 # The MSGARCH R package (version 2.50) is not included in this file and must be installed manually.
 # Run the provided install_older_packages.R script after the environment is created to install MSGARCH.
 
+# Note: rpy2==3.4.5 is installed via pip to allow compatibility with r-base 4.3.3.
+# This combination works in practice but may be flagged as incompatible by Conda.
