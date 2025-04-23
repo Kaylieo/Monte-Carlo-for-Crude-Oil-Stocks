@@ -1,14 +1,36 @@
+# Stock database
 stock_data.db
-BP.csv
-COP.csv
-CVX.csv
-EOG.csv
-XOM.csv
-HES.csv
-MPC.csv
-OXY.csv
-PSX.csv
-VLO.csv
-backtest_results.csv
+
+# Csv files
+*.csv
+
+# OS-specific files
+.DS_Store
+
+# Jupyter notebooks (if any)
+*.ipynb
+
+# Virtual environment folders
+.env/
+.venv/
+env/
+venv/
+
+# Python cache
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+
+# Logs
+*.log
+
+# VSCode settings
+.vscode/
+
+# System files
+Thumbs.db
+ehthumbs.db
+Icon?
+
+# Screenshots
+/screenshots/
