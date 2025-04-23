@@ -87,7 +87,7 @@ git clone https://github.com/YOUR_USERNAME/Monte-Carlo-for-Crude-Oil-Stocks.git
 cd Monte-Carlo-for-Crude-Oil-Stocks
 ```
 
-2. **Create and activate the environment using the lock file (recommended)**
+2. **Create and activate the environment using the lock file**
 ```bash
 conda create -n msgarch_env --file conda-lock.yml
 conda activate msgarch_env
