@@ -283,8 +283,7 @@ if st.button("Run Simulation"):
     fig.add_trace(go.Scatter(x=x_values, y=worst_path, mode='lines',
                              line=dict(color='blue', width=3), name='Worst Path'))
     fig.update_layout(
-        title={'text': f"Monte Carlo Simulation of {ticker} ({num_simulations} Simulations)",
-               'x': 0.5, 'xanchor': 'center'},
+        title={'text': f"Monte Carlo Simulation of {ticker} ({num_simulations} Simulations)", 'x': 0.5, 'xanchor': 'center'},
         xaxis_title="Days",
         yaxis_title="Stock Price ($)",
         template="plotly_dark" if st.session_state["dark_mode"] else "plotly_white"
@@ -292,7 +291,6 @@ if st.button("Run Simulation"):
     st.plotly_chart(fig)
 
     # Distribution of final prices
-    st.markdown("<h3 style='text-align:center'>Distribution of Final Prices</h3>", unsafe_allow_html=True)
     fig_hist = go.Figure()
     fig_hist.add_trace(
         go.Histogram(
@@ -303,6 +301,7 @@ if st.button("Run Simulation"):
         )
     )
     fig_hist.update_layout(
+        title={'text': f"Distribution of Final Prices for {ticker}", 'x': 0.5, 'xanchor': 'center'},
         xaxis_title="Final Price",
         yaxis_title="Frequency",
         template="plotly_dark" if st.session_state["dark_mode"] else "plotly_white"

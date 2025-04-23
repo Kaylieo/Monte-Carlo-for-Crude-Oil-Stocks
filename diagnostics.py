@@ -19,7 +19,7 @@ def calculate_mape(simulated_prices: np.ndarray, real_prices: np.ndarray) -> flo
 
 if __name__ == "__main__":
     # Example usage
-    ticker = "XOM"
+    ticker = "OXY"
     num_days = 30
     num_simulations = 1000
 
