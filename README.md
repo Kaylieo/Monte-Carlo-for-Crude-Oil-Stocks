@@ -48,7 +48,8 @@ MonteCarlo/
 ├── test_monte_carlo.py   # Unit tests
 ├── conda-lock.yml        # Locked environment for exact reproducibility
 ├── requirements.txt      # Pip dependencies
-└── install_older_packages.R  # Manual R package installation
+├── install_older_packages.R  # Manual R package installation
+└── screenshots/          # UI preview images for README
 ```
 
 ## 📐 Mathematical Framework
@@ -121,6 +122,12 @@ streamlit run app.py
    - Distribution of final prices
    - Risk metrics (VaR, CVaR)
    - Download simulation data
+
+## 📸 Application Screenshots
+
+| Interface | Simulation Graph | Histogram | Summary + Historical Prices |
+|----------|------------------|-----------|-----------------------------|
+| ![](screenshots/Screenshot%202025-04-23%20at%205.27.30%E2%80%AFPM.png) | ![](screenshots/Screenshot%202025-04-23%20at%205.27.55%E2%80%AFPM.png) | ![](screenshots/Screenshot%202025-04-23%20at%205.29.39%E2%80%AFPM.png) | ![](screenshots/Screenshot%202025-04-23%20at%205.30.22%E2%80%AFPM.png) |
 
 ## 🔬 Model Validation
 
