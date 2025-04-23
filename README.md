@@ -46,7 +46,6 @@ MonteCarlo/
 ├── backtest.py           # Model validation framework
 ├── diagnostics.py        # Model diagnostic tools
 ├── test_monte_carlo.py   # Unit tests
-├── environment.yml       # Conda environment specification
 ├── conda-lock.yml        # Locked environment for exact reproducibility
 ├── requirements.txt      # Pip dependencies
 └── install_older_packages.R  # Manual R package installation
@@ -78,31 +77,35 @@ where Z_t ~ skew-t(ν,λ) and σ_t is the MS-EGARCH volatility.
 
 ### Setup Instructions
 
-1. Clone the repository:
+1. **Fork and Clone the Repository**
+   - Go to [this repository](https://github.com/Kaylieo/Monte-Carlo-for-Crude-Oil-Stocks)
+   - Click **Fork** in the upper-right corner
+   - Then, clone your fork locally:
+
 ```bash
-git clone https://github.com/Kaylieo/Monte-Carlo-for-Crude-Oil-Stocks.git
+git clone https://github.com/YOUR_USERNAME/Monte-Carlo-for-Crude-Oil-Stocks.git
 cd Monte-Carlo-for-Crude-Oil-Stocks
 ```
 
-2. Create and activate the environment using the lock file (recommended):
+2. **Create and activate the environment using the lock file (recommended)**
 ```bash
 conda create -n msgarch_env --file conda-lock.yml
 conda activate msgarch_env
 ```
 
-3. Install pip dependencies:
+3. **Install pip dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Install MSGARCH using the provided script:
+4. **Install MSGARCH using the provided script**
 ```bash
 Rscript install_older_packages.R
 ```
 
-> ✅ This installs MSGARCH v2.50
+✅ This installs MSGARCH v2.50
 
-5. Launch the app:
+5. **Launch the app**
 ```bash
 streamlit run app.py
 ```
