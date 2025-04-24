@@ -123,7 +123,7 @@ streamlit run app.py
    - Risk metrics (VaR, CVaR)
    - Download simulation data
 
-## 📸 Application Screenshots
+## 📸 Preview
 
 | Interface | Simulation Graph | Histogram | Summary + Historical Prices |
 |----------|------------------|-----------|-----------------------------|
