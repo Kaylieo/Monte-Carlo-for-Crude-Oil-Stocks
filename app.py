@@ -1,3 +1,8 @@
+"""Streamlit app for interactive Monte Carlo simulation.
+
+This module defines the Streamlit-based UI for running Monte Carlo simulations of stock prices, including data loading, parameter selection, simulation execution, result visualization, and download options. It leverages the MonteCarloSimulator class and integrates rpy2 for R-based model fitting.
+"""
+
 # -------------------------
 # IMPORTS
 # -------------------------

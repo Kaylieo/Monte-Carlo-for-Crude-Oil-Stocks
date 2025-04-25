@@ -1,3 +1,8 @@
+"""Pytest suite for Monte Carlo simulation.
+
+This module contains unit tests for validating data preparation and simulation logic in monte_carlo.py, including error cases and integration with the MS-EGARCH model.
+"""
+
 import pytest
 import pandas as pd
 import numpy as np

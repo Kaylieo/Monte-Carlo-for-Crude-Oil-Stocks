@@ -1,3 +1,8 @@
+"""Module for diagnostics and error analysis.
+
+This module provides functions to calculate diagnostic metrics, such as Mean Absolute Percentage Error (MAPE), between simulated and real stock prices, and demonstrates example usage when run as a script.
+"""
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_percentage_error

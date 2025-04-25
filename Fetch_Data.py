@@ -1,3 +1,8 @@
+"""Module for fetching and caching stock data.
+
+This module fetches historical price data for specified crude oil stocks using yfinance and stores it in an SQLite database. It provides functions to ensure database tables exist and manage data retrieval.
+"""
+
 import yfinance as yf
 import pandas as pd
 import sqlite3

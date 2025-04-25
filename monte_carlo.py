@@ -1,3 +1,11 @@
+"""Module Monte Carlo simulation core.
+
+This module implements the MonteCarloSimulator class and SimulationResults dataclass to perform
+Markov-switching EGARCH Monte Carlo simulations integrating with R via rpy2. It provides functions
+to validate and prepare data, fit the model, and run simulations for financial analysis of stock
+prices.
+"""
+
 # -------------------------
 # IMPORTS
 # -------------------------

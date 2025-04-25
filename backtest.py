@@ -1,3 +1,8 @@
+"""Module for backtesting Monte Carlo simulation forecasts.
+
+This module loads historical stock price data, runs backtests using the Markov-switching EGARCH Monte Carlo simulation logic, computes performance and risk metrics over a test period, and visualizes the results.
+"""
+
 import pandas as pd
 import numpy as np
 import scipy.stats as st
