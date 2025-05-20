@@ -90,7 +90,13 @@ cd Monte-Carlo-for-Crude-Oil-Stocks
 
 2. **Create and activate the environment using the lock file**
 ```bash
-conda create -n msgarch_env --file conda-lock.yml
+# For macOS Apple Silicon (M1/M2/M3):
+conda-lock install --name msgarch_env --file conda-osx-arm64.lock
+
+# Or for other platforms (replace accordingly):
+# conda-lock install --name msgarch_env --file conda-linux-64.lock
+# conda-lock install --name msgarch_env --file conda-win-64.lock
+
 conda activate msgarch_env
 ```
 
@@ -152,6 +158,8 @@ Installed via Conda (except MSGARCH):
 
 Manually install:
 - MSGARCH==2.50 (via `install_older_packages.R`)
+
+> 🔒 Dependency management uses platform-specific `conda-lock` files. Always use `conda-lock install` to ensure all pip and R dependencies (like Tornado ≥6.5.0 and MSGARCH) are included.
 
 ## 🚀 Future Improvements
 

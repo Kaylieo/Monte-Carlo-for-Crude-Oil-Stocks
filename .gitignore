@@ -34,3 +34,7 @@ Icon?
 
 # Screenshots
 /screenshots/
+
+# Conda and temp env files
+conda-lock.txt
+temp_env.yml
