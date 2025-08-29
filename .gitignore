@@ -1,40 +1,42 @@
-# Stock database
-stock_data.db
-
-# Csv files
+# Data files
 *.csv
+*.db
 
-# OS-specific files
-.DS_Store
+# Compiled R packages and R artifacts
+*.Rhistory
+*.RData
+*.rds
+.Rproj.user/
 
-# Jupyter notebooks (if any)
-*.ipynb
+# Conda installers and platform-specific binaries
+conda-*.sh
+conda-*.exe
+conda-*.pkg
+*.whl
 
-# Virtual environment folders
+# Test artifacts
+*.out
+*.tmp
+*.log
+
+# VSCode and IDE settings
+.vscode/
+.idea/
+
+# Python virtual envs
 .env/
 .venv/
-env/
 venv/
+env/
 
-# Python cache
+# Cache and build
 __pycache__/
 *.py[cod]
 *.pyo
+*.egg-info/
+dist/
+build/
 
-# Logs
-*.log
-
-# VSCode settings
-.vscode/
-
-# System files
+# OS files
+.DS_Store
 Thumbs.db
-ehthumbs.db
-Icon?
-
-# Screenshots
-/screenshots/
-
-# Conda and temp env files
-conda-lock.txt
-temp_env.yml
